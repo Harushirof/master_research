@@ -1,7 +1,25 @@
+# MATLAB auto-generated
+*.asv
+*.autosave
+*.m~
+*.mex*
+
+# MATLAB binary data
 *.mat
 *.fig
-*.asv
-*.mex*
-*.autosave
+*.slx
+
+# Experimental data (large files — track with external storage if needed)
+*.csv
+*.bin
+*.zip
+*.MEM
+
+# Output files (regenerable)
+*.pdf
+*.png
+*.mdd
+
+# OS
 .DS_Store
-*.m~
+Thumbs.db
