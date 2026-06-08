@@ -15,9 +15,14 @@
 *.zip
 *.MEM
 
+# Audio recordings (very large — keep in external storage)
+*.wav
+*.WAV
+
 # Output files (regenerable)
 *.pdf
 *.png
+*.svg
 *.mdd
 
 # OS
