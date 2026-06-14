@@ -23,8 +23,13 @@
 *.pdf
 *.png
 *.svg
+*.bmp
 *.mdd
 
 # OS
 .DS_Store
 Thumbs.db
+
+# Tooling (local settings, not for repo)
+.claude/
+node_modules/

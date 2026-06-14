@@ -1,0 +1,26 @@
+製品グレード	PN offset 1Hz	PN offset 10Hz	ADEV TAU=1sec
+OP21A-D	< -121dBc/Hz	< -140dBc/Hz	< 1.6E-13 (0.00016ppb/s)
+
+cybershaft(638000円)
+0.01
+2
+1
+10
+-121
+-140
+
+cybershaft(121,000円)
+0.01
+1
+-113
+
+
+グレード
+位相雑音特性
+(Offset 1Hz)
+
+OP13
+
+< -113dBc/Hz
+
+121,000円
