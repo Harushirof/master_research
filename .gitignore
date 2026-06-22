@@ -21,10 +21,10 @@
 
 # Output files (regenerable)
 *.pdf
-*.png
 *.svg
 *.bmp
 *.mdd
+# NOTE: *.png は追跡する（発表図・解析図を残すため, 2026-06-14〜）
 
 # OS
 .DS_Store
@@ -33,3 +33,7 @@ Thumbs.db
 # Tooling (local settings, not for repo)
 .claude/
 node_modules/
+
+# Office temp/lock files
+~$*
+*.tmp
