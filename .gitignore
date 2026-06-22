@@ -26,6 +26,9 @@
 *.bmp
 *.mdd
 
+# 中間発表のベンチマーク図は記録として追跡する（上の *.png 除外の例外）
+!presentations/mid_term_202606/05_benchmark_data/*.png
+
 # OS
 .DS_Store
 Thumbs.db
