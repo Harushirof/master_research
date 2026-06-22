@@ -4,8 +4,8 @@
 % 実行方法（このフォルダ 05_benchmark_data で）:
 %   >> bench_p2_curated
 % 出力: bench_p2_curated.png
-% 注: 既存14は灰の点線、追加代表は色つき太線。重複回避のため PRS10・iMaser は
-%     既存14に含まれるので追加しない。代表機種を変えるなら下の pick を編集。
+% 注: 既存14も追加代表も対等に色つきで表示（凡例も個別）。重複回避のため
+%     PRS10・iMaser は既存14に含まれるので追加しない。代表は下の pick を編集。
 
 xlsx = "dBCperHz.xlsx";
 ex14 = ["Ceyear2G","Ceyear3G","DST2","DST1","SPXONo1","OEO","Abracon-U", ...
@@ -20,22 +20,23 @@ pick = ["Abracon AOCJY", ...                 % OCXO 標準
         "SiTime SiT5356 (MEMS)", ...          % MEMS
         "Epson TG2520SMN (TCXO)"];            % TCXO
 
-figure('Name','P2 既存14+代表 (10MHz換算)','NumberTitle','off','Position',[40 40 1120 700]);
+figure('Name','P2 既存14+代表 (10MHz換算)','NumberTitle','off','Position',[40 40 1500 760]);
 hold on;
 
-% --- 既存14（灰・細点線）---
+legH = []; legL = strings(0,1);
+
+% --- 既存14（対等・色つき）---
 for i = 1:numel(ex14)
     d = ex14(i);
     N = cell2mat(readcell(xlsx,"Sheet",d,"Range","A3:A3"));
     f = cell2mat(readcell(xlsx,"Sheet",d,"Range","A2:A2"));
     C = cell2mat(readcell(xlsx,"Sheet",d,"Range",strcat("A4:B",num2str(3+N))));
     L10 = C(:,2) + 20*log10(0.01 ./ f);
-    plot(C(:,1), L10, ':', 'Color',[0.6 0.6 0.6], 'LineWidth',0.7);
+    h = plot(C(:,1), L10, 'o-', 'LineWidth',1.0, 'MarkerSize',3);
+    legH(end+1) = h; legL(end+1) = d; %#ok<AGROW>
 end
-hex = plot(nan, nan, ':', 'Color',[0.6 0.6 0.6], 'LineWidth',0.7);  % 凡例用ダミー
-legH = hex; legL = "既存14";
 
-% --- 追加代表（色つき・太）---
+% --- 追加代表（対等・色つき）---
 D = benchmark_extra_data();
 allnames = string({D.name});
 for k = 1:numel(pick)
@@ -45,14 +46,15 @@ for k = 1:numel(pick)
     end
     d = D(idx);
     L10 = d.L + 20*log10(10 ./ d.carrier_MHz);
-    h = plot(d.off, L10, 'o-', 'LineWidth',1.5, 'MarkerSize',4);
+    h = plot(d.off, L10, 'o-', 'LineWidth',1.0, 'MarkerSize',3);
     legH(end+1) = h; legL(end+1) = string(d.name); %#ok<AGROW>
 end
 
 set(gca,'xscale','log'); grid on;
 xlim([0.1 1e6]); ylim([-170 -30]);
 xlabel('オフセット周波数 [Hz]'); ylabel('L(f) [dBc/Hz] (10MHz換算)');
-legend(legH, legL, 'Location','northeastoutside', 'Interpreter','none', 'FontSize',8);
+legend(legH, legL, 'Location','eastoutside', 'Interpreter','none', 'FontSize',8);
 title('パターン2: 既存14 + 各カテゴリ代表 (10MHz換算)');
+drawnow;   % レイアウト確定（凡例の見切れ防止）
 exportgraphics(gcf, 'bench_p2_curated.png', 'Resolution',300);
 fprintf('保存: bench_p2_curated.png\n');

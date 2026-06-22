@@ -8,7 +8,7 @@
 %     既存14の cybershaft と同一機種のため、ここでは追加側の値を用いて重複を避ける。
 
 D = benchmark_extra_data();
-figure('Name','P3 OCXOのみ (10MHz換算)','NumberTitle','off','Position',[40 40 1100 680]);
+figure('Name','P3 OCXOのみ (10MHz換算)','NumberTitle','off','Position',[40 40 1500 760]);
 hold on;
 legL = strings(0,1);
 for i = 1:numel(D)
@@ -21,7 +21,8 @@ end
 set(gca,'xscale','log'); grid on;
 xlim([0.1 1e6]); ylim([-170 -30]);
 xlabel('オフセット周波数 [Hz]'); ylabel('L(f) [dBc/Hz] (10MHz換算)');
-legend(legL, 'Location','northeastoutside', 'Interpreter','none', 'FontSize',8);
+legend(legL, 'Location','eastoutside', 'Interpreter','none', 'FontSize',8);
 title('パターン3: OCXO のみ全部 (10MHz換算)');
+drawnow;   % レイアウト確定（凡例の見切れ防止）
 exportgraphics(gcf, 'bench_p3_ocxo.png', 'Resolution',300);
 fprintf('保存: bench_p3_ocxo.png (OCXO %d機種)\n', numel(legL));
