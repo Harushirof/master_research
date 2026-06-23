@@ -65,9 +65,10 @@ def _fit(path, maxw, maxh):
 
 
 class Deck:
-    def __init__(self, template=None):
+    def __init__(self, template=None, keep_first=2):
         self.prs = Presentation(template or TEMPLATE)
-        self._n0 = len(self.prs.slides._sldIdLst)   # 削除対象＝元の本文スライド数
+        self._n0 = len(self.prs.slides._sldIdLst)   # 開いた時点のスライド数
+        self._keep = keep_first   # 先頭から残す枚数（表紙・Index・参照スライド等）。残り(=元の本文)は save() で削除
         self._page = 1
 
     # ---------- 低レベル ----------
@@ -206,6 +207,62 @@ class Deck:
                 self._cap(s, 1.6, 7.05, 7.6, caps[0])
         return s
 
+    def slide(self, chapter, subtitle, keymsg, bullets, images=None, caps=None, placeholder=None):
+        """新フォーマット（卒論1-1スライド準拠）:
+          ヘッダ=2段（章=小14pt ＋ 小見出し=大, タイトルPHに）／キーメッセージ=全幅バナー／
+          本文=左、図=右（画像があれば左右2分割）。subtitle=None なら章名のみ1行（02/05/06 等）。
+        """
+        LN = RGBColor(0xEA, 0xEF, 0xF7); N2 = RGBColor(0x1B, 0x2A, 0x5A); KR = RGBColor(0xB0, 0x30, 0x10)
+        s = self.prs.slides.add_slide(self._layout())
+        # --- ヘッダ（タイトルプレースホルダに2行）---
+        title = s.shapes.title; tf = title.text_frame
+        title.left = Inches(0.25); title.top = Inches(0.26); title.width = Inches(10.36); title.height = Inches(1.06)
+        for r in list(tf.paragraphs[0].runs):
+            r._element.getparent().remove(r._element)
+        for ep in tf.paragraphs[1:]:
+            ep._p.getparent().remove(ep._p)
+        p0 = tf.paragraphs[0]; p0.space_before = Pt(0); p0.space_after = Pt(0)
+        if subtitle:
+            r = p0.add_run(); r.text = chapter; r.font.size = Pt(14); r.font.bold = True; r.font.color.rgb = NAVY; _ea(r)
+            p1 = tf.add_paragraph(); p1.space_before = Pt(0); p1.space_after = Pt(0)
+            r = p1.add_run(); r.text = subtitle; r.font.bold = True; r.font.color.rgb = NAVY; _ea(r)  # サイズはPH既定（大）を継承
+        else:
+            r = p0.add_run(); r.text = chapter; r.font.bold = True; r.font.color.rgb = NAVY; _ea(r)
+        # --- キーメッセージ（全幅バナー）---
+        box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.30), Inches(1.46), Inches(10.23), Inches(0.80))
+        box.fill.solid(); box.fill.fore_color.rgb = LN; box.line.fill.background(); box.shadow.inherit = False
+        try: box.adjustments[0] = 0.08
+        except Exception: pass
+        bt = box.text_frame; bt.word_wrap = True; bt.vertical_anchor = MSO_ANCHOR.MIDDLE
+        bt.margin_left = Pt(10); bt.margin_right = Pt(10); bt.margin_top = Pt(2); bt.margin_bottom = Pt(2)
+        bp = bt.paragraphs[0]
+        r = bp.add_run(); r.text = "結論  "; r.font.size = Pt(11); r.font.bold = True; r.font.color.rgb = KR; _ea(r)
+        r = bp.add_run(); r.text = keymsg; r.font.size = Pt(13); r.font.bold = True; r.font.color.rgb = N2; _ea(r)
+        # --- 本文（左）＋ 図 / プレースホルダ（右）---
+        has_r = bool(images) or (placeholder is not None)
+        body = s.placeholders[1]
+        body.left = Inches(0.30); body.top = Inches(2.42)
+        body.width = Inches(4.95 if has_r else 10.20); body.height = Inches(4.7)
+        tb = body.text_frame; tb.word_wrap = True
+        for i, b in enumerate(bullets):
+            lvl, txt = b if isinstance(b, tuple) else (0, b)
+            p = tb.paragraphs[0] if i == 0 else tb.add_paragraph()
+            p.level = lvl
+            r = p.add_run(); r.text = txt; _ea(r)
+        images = images or []; caps = caps or []
+        if placeholder is not None:
+            self._ph(s, 5.55, 2.50, 4.95, 3.9, placeholder)
+        elif len(images) == 1:
+            self._pic(s, images[0], 5.55, 2.50, 4.95, 4.0)
+            if caps:
+                self._cap(s, 5.55, 6.6, 4.95, caps[0])
+        elif len(images) >= 2:
+            for i, im in enumerate(images[:2]):
+                self._pic(s, im, 5.55, 2.46 + i * 2.16, 4.95, 1.98)
+                if i < len(caps):
+                    self._cap(s, 5.55, 2.46 + i * 2.16 + 1.99, 4.95, caps[i])
+        return s
+
     def divider(self, title):
         """中表紙（章区切り）。レイアウト '中表紙' を使う。"""
         s = self.prs.slides.add_slide(self._layout("中表紙"))
@@ -219,7 +276,7 @@ class Deck:
         ※新スライドは末尾に足してあるので、削除後の並び＝表紙・Index・新本文。"""
         sldIdLst = self.prs.slides._sldIdLst
         ids = list(sldIdLst)
-        for i in sorted(range(2, self._n0), reverse=True):
+        for i in sorted(range(self._keep, self._n0), reverse=True):
             rId = ids[i].get(qn("r:id"))
             self.prs.part.drop_rel(rId)
             sldIdLst.remove(ids[i])
