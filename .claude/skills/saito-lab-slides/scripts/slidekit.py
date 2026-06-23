@@ -170,7 +170,18 @@ class Deck:
     def content(self, title, bullets, images=None, caps=None, layout="right", placeholder=None):
         s = self.prs.slides.add_slide(self._layout())
         s.shapes.title.text = title                          # 見出し（濃紺アクセントはレイアウト由来）
-        body = s.placeholders[1]; tf = body.text_frame; tf.word_wrap = True
+        body = s.placeholders[1]
+        # 本文枠の位置・幅・高さを明示する。継承のまま .height だけ設定すると幅が欠落し
+        # （cx が無い xfrm になり）本文が描画されない不具合があるため、4値とも必ず与える。
+        right_col = (placeholder is not None) or (layout == "right" and images)
+        body.left = Inches(0.30); body.top = Inches(1.00)
+        if right_col:
+            body.width = Inches(4.95); body.height = Inches(5.7)
+        elif layout in ("below2", "below") and images:
+            body.width = Inches(10.20); body.height = Inches(2.5 if layout == "below2" else 2.9)
+        else:
+            body.width = Inches(10.20); body.height = Inches(5.7)
+        tf = body.text_frame; tf.word_wrap = True
         for i, b in enumerate(bullets):
             lvl, txt = b if isinstance(b, tuple) else (0, b)
             p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
@@ -178,25 +189,21 @@ class Deck:
             r = p.add_run(); r.text = txt; _ea(r)            # ■/●/→ はレイアウトの箇条書きに従う
         images = images or []; caps = caps or []
         if placeholder is not None:
-            body.width = Inches(4.9)
-            self._ph(s, 5.5, 2.0, 4.85, 3.7, placeholder)
+            self._ph(s, 5.55, 1.95, 4.95, 3.7, placeholder)
         elif layout == "right" and images:
-            body.width = Inches(4.85)
-            self._pic(s, images[0], 5.5, 2.0, 4.9, 4.4)
+            self._pic(s, images[0], 5.55, 1.95, 4.95, 4.4)
             if caps:
-                self._cap(s, 5.5, 6.5, 4.9, caps[0])
+                self._cap(s, 5.55, 6.45, 4.95, caps[0])
         elif layout == "below2" and images:
-            body.height = Inches(1.9)
             cw = (SW - 1.0) / 2
             for i, im in enumerate(images[:2]):
-                self._pic(s, im, 0.45 + i * (cw + 0.1), 3.7, cw, 2.7)
+                self._pic(s, im, 0.45 + i * (cw + 0.1), 3.75, cw, 2.6)
                 if i < len(caps):
-                    self._cap(s, 0.45 + i * (cw + 0.1), 6.55, cw, caps[i])
+                    self._cap(s, 0.45 + i * (cw + 0.1), 6.5, cw, caps[i])
         elif images:                                          # below（1枚を下に大きく）
-            body.height = Inches(2.3)
-            self._pic(s, images[0], 1.5, 4.2, 7.8, 2.9)
+            self._pic(s, images[0], 1.6, 4.05, 7.6, 2.85)
             if caps:
-                self._cap(s, 1.5, 7.2, 7.8, caps[0])
+                self._cap(s, 1.6, 7.05, 7.6, caps[0])
         return s
 
     def divider(self, title):
