@@ -209,10 +209,11 @@ class Deck:
 
     def slide(self, chapter, subtitle, keymsg, bullets, images=None, caps=None, placeholder=None):
         """新フォーマット（卒論1-1スライド準拠）:
-          ヘッダ=2段（章=小14pt ＋ 小見出し=大, タイトルPHに）／キーメッセージ=全幅バナー／
-          本文=左、図=右（画像があれば左右2分割）。subtitle=None なら章名のみ1行（02/05/06 等）。
+          ヘッダ=2段（章=小14pt ＋ 小見出し=大, タイトルPHに）／キーメッセージ=本文プレースホルダ
+          （スライドマスターの本文）先頭に全幅・太字濃紺で表示（赤字バナーは使わない）／補足は●で続け、
+          図は本文の下に配置。subtitle=None なら章名のみ1行（02/05/06 等）。
         """
-        LN = RGBColor(0xEA, 0xEF, 0xF7); N2 = RGBColor(0x1B, 0x2A, 0x5A); KR = RGBColor(0xB0, 0x30, 0x10)
+        N2 = RGBColor(0x1B, 0x2A, 0x5A)
         s = self.prs.slides.add_slide(self._layout())
         # --- ヘッダ（タイトルプレースホルダに2行）---
         title = s.shapes.title; tf = title.text_frame
@@ -228,39 +229,37 @@ class Deck:
             r = p1.add_run(); r.text = subtitle; r.font.bold = True; r.font.color.rgb = NAVY; _ea(r)  # サイズはPH既定（大）を継承
         else:
             r = p0.add_run(); r.text = chapter; r.font.bold = True; r.font.color.rgb = NAVY; _ea(r)
-        # --- キーメッセージ（全幅バナー）---
-        box = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(0.30), Inches(1.46), Inches(10.23), Inches(0.80))
-        box.fill.solid(); box.fill.fore_color.rgb = LN; box.line.fill.background(); box.shadow.inherit = False
-        try: box.adjustments[0] = 0.08
-        except Exception: pass
-        bt = box.text_frame; bt.word_wrap = True; bt.vertical_anchor = MSO_ANCHOR.MIDDLE
-        bt.margin_left = Pt(10); bt.margin_right = Pt(10); bt.margin_top = Pt(2); bt.margin_bottom = Pt(2)
-        bp = bt.paragraphs[0]
-        r = bp.add_run(); r.text = "結論  "; r.font.size = Pt(11); r.font.bold = True; r.font.color.rgb = KR; _ea(r)
-        r = bp.add_run(); r.text = keymsg; r.font.size = Pt(13); r.font.bold = True; r.font.color.rgb = N2; _ea(r)
-        # --- 本文（左）＋ 図 / プレースホルダ（右）---
-        has_r = bool(images) or (placeholder is not None)
+        # --- キーメッセージ＋補足：スライドマスターの本文プレースホルダを使う（赤字バナーは廃止）---
+        import math
+        def _ln(t, cpl): return max(1, math.ceil(len(t) / cpl))   # 概算行数（本文≈20pt）
+        tot = _ln(keymsg, 32) + sum(_ln(b[1] if isinstance(b, tuple) else b, 34) for b in bullets)
+        img_top = min(1.05 + 0.37 * tot + 0.18, 3.95)
         body = s.placeholders[1]
-        body.left = Inches(0.30); body.top = Inches(2.42)
-        body.width = Inches(4.95 if has_r else 10.20); body.height = Inches(4.7)
+        body.left = Inches(0.30); body.top = Inches(1.02)
+        body.width = Inches(10.20); body.height = Inches(max(img_top - 1.10, 0.8))
         tb = body.text_frame; tb.word_wrap = True
-        for i, b in enumerate(bullets):
-            lvl, txt = b if isinstance(b, tuple) else (0, b)
-            p = tb.paragraphs[0] if i == 0 else tb.add_paragraph()
-            p.level = lvl
-            r = p.add_run(); r.text = txt; _ea(r)
+        # キーメッセージ＝先頭の本文（第1階層・太字・濃紺）、全幅
+        p = tb.paragraphs[0]; p.level = 0
+        r = p.add_run(); r.text = keymsg; r.font.bold = True; r.font.color.rgb = N2; _ea(r)
+        # 補足は下位レベル（●）で続ける
+        for b in bullets:
+            lvl, txt = b if isinstance(b, tuple) else (1, b)
+            pp = tb.add_paragraph(); pp.level = lvl
+            rr = pp.add_run(); rr.text = txt; _ea(rr)
+        # --- 図 / プレースホルダ（本文の下）---
         images = images or []; caps = caps or []
         if placeholder is not None:
-            self._ph(s, 5.55, 2.50, 4.95, 3.9, placeholder)
+            self._ph(s, 1.6, img_top, 7.6, 6.95 - img_top, placeholder)
         elif len(images) == 1:
-            self._pic(s, images[0], 5.55, 2.50, 4.95, 4.0)
+            self._pic(s, images[0], 1.3, img_top, 8.2, 6.9 - img_top)
             if caps:
-                self._cap(s, 5.55, 6.6, 4.95, caps[0])
+                self._cap(s, 1.3, 7.0, 8.2, caps[0])
         elif len(images) >= 2:
+            cw = (SW - 1.1) / 2
             for i, im in enumerate(images[:2]):
-                self._pic(s, im, 5.55, 2.46 + i * 2.16, 4.95, 1.98)
+                self._pic(s, im, 0.5 + i * (cw + 0.1), img_top, cw, 6.8 - img_top)
                 if i < len(caps):
-                    self._cap(s, 5.55, 2.46 + i * 2.16 + 1.99, 4.95, caps[i])
+                    self._cap(s, 0.5 + i * (cw + 0.1), 6.85, cw, caps[i])
         return s
 
     def divider(self, title):
