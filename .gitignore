@@ -37,3 +37,7 @@ node_modules/
 # Office temp/lock files
 ~$*
 *.tmp
+
+# Scratch/temp dumps (tool-generated, not for repo)
+_*_dump.txt
+_status_*.txt
